@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,11 +31,21 @@ class User extends Authenticatable
         ];
     }
 
-    public function productos(){
+    public function productos()
+    {
         return $this->hasMany(Product::class);
     }
 
-    public function categorias(){
+    public function categorias()
+    {
         return $this->hasMany(Category::class);
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return in_array($this->email, [
+            'kevin@gmail.com',
+            'belen@gmail.com',
+        ]);
     }
 }
