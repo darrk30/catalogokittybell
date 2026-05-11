@@ -43,9 +43,6 @@ class User extends Authenticatable
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return in_array($this->email, [
-            'kevin@gmail.com',
-            'belen@gmail.com',
-        ]);
+        return true;
     }
 }
