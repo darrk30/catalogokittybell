@@ -26,5 +26,14 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        User::updateOrCreate(
+            ['email' => 'belen@gmail.com'], // La condición para buscar
+            [
+                'name' => 'Belen Cano',
+                'password' => Hash::make('123123123'),
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }

@@ -28,13 +28,9 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->registration()
-            ->passwordReset()
-            ->emailVerification()
-            ->emailChangeVerification()
             ->profile(isSimple: false)
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Pink,
             ])
             ->renderHook('panels::body.start', fn() => '
                 <style>
