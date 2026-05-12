@@ -29,6 +29,10 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->profile(isSimple: false)
+            ->sidebarCollapsibleOnDesktop()
+            ->brandLogo(function () {
+                return asset('img/logokittybell.jpeg');
+            })
             ->colors([
                 'primary' => Color::Pink,
             ])

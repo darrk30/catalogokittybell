@@ -15,7 +15,10 @@
     <!-- 2. BARRA DE NAVEGACIÓN -->
     <header class="bg-white sticky top-0 z-50 border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <a href="/" class="text-xl font-black uppercase tracking-tighter">KITTYBELL</a>
+            <a href="/" class="inline-block">
+                <img src="{{ asset('img/logokittybell.jpeg') }}" alt="Logo Kittybell"
+                    class="h-10 md:h-12 w-auto object-contain">
+            </a>
 
             <nav class="flex items-center gap-4">
                 <a href="/"
