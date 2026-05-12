@@ -71,26 +71,25 @@
 
                 {{-- Precio final (base + precio_extra de opciones) --}}
                 <div class="flex items-center gap-3">
-                    @if ($producto->descuento > 0)
-                        <span class="text-2xl font-black text-red-600">
-                            S/ {{ number_format($this->precioFinal, 2) }}
-                        </span>
+                    {{-- 1. Precio Final (El que paga el cliente) --}}
+                    <span class="text-2xl font-black text-gray-900">
+                        S/ {{ number_format($this->precioFinal, 2) }}
+                    </span>
+
+                    {{-- 2. Precio Tachado (Solo se muestra si el precio base es MAYOR al final) --}}
+                    {{-- Esto cubre descuentos automáticos --}}
+                    @if ($producto->precio > $this->precioFinal)
                         <span class="text-sm text-gray-300 line-through font-medium">
                             S/ {{ number_format($producto->precio, 2) }}
                         </span>
-                    @else
-                        <span class="text-2xl font-black text-gray-900">
-                            S/ {{ number_format($this->precioFinal, 2) }}
+                    @endif
+
+                    {{-- 3. Badge de Precio Extra (Si el precio subió por una opción/color) --}}
+                    {{-- Aquí no tachamos el base porque el base es MENOR, solo avisamos el adicional --}}
+                    @if ($this->montoExtra > 0)
+                        <span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded">
+                            + S/ {{ number_format($this->montoExtra, 2) }}
                         </span>
-                        {{-- Si hay precio_extra, mostrar precio base tachado --}}
-                        @if ($this->precioFinal > $producto->precio)
-                            <span class="text-xs text-gray-400 line-through">
-                                S/ {{ number_format($producto->precio, 2) }}
-                            </span>
-                            <span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded">
-                                + S/ {{ number_format($this->precioFinal - $producto->precio, 2) }}
-                            </span>
-                        @endif
                     @endif
                 </div>
             </div>
@@ -132,13 +131,13 @@
                                     $selectedOptions[$nombreAtributo] ?? null,
                                 );
                             @endphp
-                            <span class="text-[9px] text-gray-400 uppercase font-bold">
+                            {{-- <span class="text-[9px] text-gray-400 uppercase font-bold">
                                 {{ $opcionActual?->valor->nombre }}
                                 @if ($opcionActual?->precio_extra > 0)
                                     <span class="text-green-600">+S/
                                         {{ number_format($opcionActual->precio_extra, 2) }}</span>
                                 @endif
-                            </span>
+                            </span> --}}
                         </div>
 
                         <div class="flex flex-wrap gap-2">
@@ -168,12 +167,12 @@
                                         class="px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all
                                 {{ $isSelected ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-200 hover:border-black' }}">
                                         {{ $opt->valor->nombre }}
-                                        @if ($opt->precio_extra > 0)
+                                        {{-- @if ($opt->precio_extra > 0)
                                             <span
                                                 class="block text-[8px] {{ $isSelected ? 'text-gray-300' : 'text-green-600' }}">
                                                 +S/ {{ number_format($opt->precio_extra, 2) }}
                                             </span>
-                                        @endif
+                                        @endif --}}
                                     </button>
                                 @endif
                             @endforeach

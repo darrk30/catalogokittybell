@@ -77,6 +77,14 @@ class ProductDetail extends Component
         }
     }
 
+    public function getMontoExtraProperty()
+    {
+        // Buscamos las opciones seleccionadas y sumamos su precio_extra
+        return $this->producto->productoOpciones()
+            ->whereIn('value_id', array_values($this->selectedOptions))
+            ->sum('precio_extra') ?? 0;
+    }
+
     // ── Opción actualmente seleccionada (para precio/código) ─
     public function getOpcionSeleccionadaProperty(): ?\App\Models\ProductOption
     {
