@@ -57,23 +57,41 @@
 
         {{-- 📝 INFO DERECHA (Espaciado más compacto: space-y-6) --}}
         <div class="lg:col-span-5 space-y-6">
+            {{-- Precio y código dinámico --}}
             <div class="space-y-2">
-                <h1 class="text-3xl font-black uppercase tracking-tighter leading-none text-gray-900">
-                    {{ $producto->nombre }}</h1>
+                <div class="flex items-center gap-2 mb-1">
+                    {{-- Código: de opción si existe, sino del producto --}}
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-[0.3em] bg-gray-50 px-2 py-1">
+                        # {{ $this->codigoFinal }}
+                    </span>
+                </div>
 
-                {{-- Lógica de Precios --}}
+                <h1 class="text-3xl font-black uppercase tracking-tighter leading-none text-gray-900">
+                    {{ $producto->nombre }}
+                </h1>
+
+                {{-- Precio final (base + precio_extra de opciones) --}}
                 <div class="flex items-center gap-3">
                     @if ($producto->descuento > 0)
-                        @php
-                            $precioConDescuento = $producto->precio * (1 - $producto->descuento / 100);
-                        @endphp
-                        <span class="text-2xl font-black text-red-600">S/
-                            {{ number_format($precioConDescuento, 2) }}</span>
-                        <span class="text-sm text-gray-300 line-through font-medium">S/
-                            {{ number_format($producto->precio, 2) }}</span>
+                        <span class="text-2xl font-black text-red-600">
+                            S/ {{ number_format($this->precioFinal, 2) }}
+                        </span>
+                        <span class="text-sm text-gray-300 line-through font-medium">
+                            S/ {{ number_format($producto->precio, 2) }}
+                        </span>
                     @else
-                        <span class="text-2xl font-black text-gray-900">S/
-                            {{ number_format($producto->precio, 2) }}</span>
+                        <span class="text-2xl font-black text-gray-900">
+                            S/ {{ number_format($this->precioFinal, 2) }}
+                        </span>
+                        {{-- Si hay precio_extra, mostrar precio base tachado --}}
+                        @if ($this->precioFinal > $producto->precio)
+                            <span class="text-xs text-gray-400 line-through">
+                                S/ {{ number_format($producto->precio, 2) }}
+                            </span>
+                            <span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded">
+                                + S/ {{ number_format($this->precioFinal - $producto->precio, 2) }}
+                            </span>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -101,32 +119,62 @@
             </div>
 
             {{-- 🎨 VARIANTES --}}
+            {{-- Variantes — reemplaza el bloque @foreach de variantes --}}
             <div class="space-y-6">
                 @foreach ($producto->productoOpciones->groupBy('atributo.nombre') as $nombreAtributo => $opciones)
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
-                            <label
-                                class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-900">{{ $nombreAtributo }}</label>
+                            <label class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-900">
+                                {{ $nombreAtributo }}
+                            </label>
+                            @php
+                                $opcionActual = $opciones->firstWhere(
+                                    'valor.id',
+                                    $selectedOptions[$nombreAtributo] ?? null,
+                                );
+                            @endphp
                             <span class="text-[9px] text-gray-400 uppercase font-bold">
-                                {{ $opciones->where('valor.id', $selectedOptions[$nombreAtributo])->first()->valor->nombre }}
+                                {{ $opcionActual?->valor->nombre }}
+                                @if ($opcionActual?->precio_extra > 0)
+                                    <span class="text-green-600">+S/
+                                        {{ number_format($opcionActual->precio_extra, 2) }}</span>
+                                @endif
                             </span>
                         </div>
 
                         <div class="flex flex-wrap gap-2">
                             @foreach ($opciones->unique('value_id') as $opt)
-                                @php $isSelected = $selectedOptions[$nombreAtributo] == $opt->valor->id; @endphp
+                                @php $isSelected = ($selectedOptions[$nombreAtributo] ?? null) == $opt->valor->id; @endphp
 
                                 @if (strtolower($nombreAtributo) === 'color')
+                                    {{-- Swatch de color con wire:click --}}
                                     <button wire:click="selectOption('{{ $nombreAtributo }}', {{ $opt->valor->id }})"
-                                        class="w-8 h-8 rounded-full border {{ $isSelected ? 'border-black scale-110 shadow-sm' : 'border-gray-100 hover:border-gray-300' }} p-0.5 transition-all">
+                                        title="{{ $opt->valor->nombre }}{{ $opt->precio_extra > 0 ? ' +S/' . number_format($opt->precio_extra, 2) : '' }}"
+                                        class="relative w-8 h-8 rounded-full border-2 p-0.5 transition-all
+                                {{ $isSelected ? 'border-black scale-110 shadow-sm' : 'border-gray-100 hover:border-gray-400' }}">
                                         <div class="w-full h-full rounded-full"
-                                            style="background-color: {{ $opt->valor->valor }}"></div>
+                                            style="background-color: {{ $opt->valor->valor }}">
+                                        </div>
+                                        {{-- Tick si está seleccionado --}}
+                                        @if ($isSelected)
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <svg class="w-3 h-3 drop-shadow" fill="white" viewBox="0 0 24 24">
+                                                    <path d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </div>
+                                        @endif
                                     </button>
                                 @else
                                     <button wire:click="selectOption('{{ $nombreAtributo }}', {{ $opt->valor->id }})"
                                         class="px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all
-                                            {{ $isSelected ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-200 hover:border-black' }}">
+                                {{ $isSelected ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-200 hover:border-black' }}">
                                         {{ $opt->valor->nombre }}
+                                        @if ($opt->precio_extra > 0)
+                                            <span
+                                                class="block text-[8px] {{ $isSelected ? 'text-gray-300' : 'text-green-600' }}">
+                                                +S/ {{ number_format($opt->precio_extra, 2) }}
+                                            </span>
+                                        @endif
                                     </button>
                                 @endif
                             @endforeach

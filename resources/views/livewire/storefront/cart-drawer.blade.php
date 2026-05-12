@@ -177,7 +177,7 @@
                             pedido</p>
                         @foreach ($cart as $key => $item)
                             @php
-                                $codigo = str_pad(explode('_', $key)[1] ?? '0000', 4, '0', STR_PAD_LEFT);
+                                $codigo = $item['codigo'] ?? '0000';
                                 $variantes = collect($item['variantes'])->values()->implode(' - ');
                             @endphp
                             <div class="flex justify-between items-start gap-4">
@@ -185,22 +185,23 @@
                                     <span class="font-black text-gray-900">{{ $codigo }}</span>
                                     — {{ $item['nombre'] }}
                                     @if ($variantes)
-                                        <span class="text-gray-500">- {{ $variantes }}</span>
+                                        <span class="text-gray-500"> - {{ $variantes }}</span>
                                     @endif
                                     <span class="text-gray-400 font-bold"> ×{{ $item['cantidad'] }}</span>
                                 </span>
-                                <span class="text-[11px] font-black text-gray-900 flex-shrink-0">S/
-                                    {{ number_format($item['precio'] * $item['cantidad'], 2) }}</span>
+                                <span class="text-[11px] font-black text-gray-900 flex-shrink-0">
+                                    S/ {{ number_format($item['precio'] * $item['cantidad'], 2) }}
+                                </span>
                             </div>
                         @endforeach
                         <div class="pt-3 mt-1 border-t border-gray-200 flex justify-between items-center">
                             <span class="text-[9px] font-black uppercase tracking-widest text-gray-500">Total a
                                 pagar</span>
-                            <span class="text-base font-black text-black">S/
-                                {{ number_format(collect($cart)->sum(fn($i) => $i['precio'] * $i['cantidad']), 2) }}</span>
+                            <span class="text-base font-black text-black">
+                                S/ {{ number_format(collect($cart)->sum(fn($i) => $i['precio'] * $i['cantidad']), 2) }}
+                            </span>
                         </div>
                     </div>
-
                     {{-- Campos --}}
                     <div class="space-y-4">
                         <div>
@@ -259,20 +260,22 @@
                                 return;
                             }
                             const productos = @js(
-                                collect($cart)
-                                    ->map(function ($item, $key) {
-                                        $codigo = str_pad(explode('_', $key)[1] ?? '0000', 4, '0', STR_PAD_LEFT);
-                                        $variantes = collect($item['variantes'])->values()->implode(' - ');
-                                        $linea = $codigo . ' - ' . $item['nombre'];
-                                        if ($variantes) {
-                                            $linea .= ' - ' . $variantes;
-                                        }
-                                        $linea .= ' x' . $item['cantidad'];
-                                        return $linea;
-                                    })
-                                    ->values()
-                                    ->toArray(),
-                            );
+    collect($cart)
+        ->map(function ($item, $key) {
+            // ← Usar item['codigo'] si existe, sino derivar del key como antes
+            $codigo = !empty($item['codigo']) ? $item['codigo'] : str_pad(explode('_', $key)[1] ?? '0000', 4, '0', STR_PAD_LEFT);
+
+            $variantes = collect($item['variantes'])->values()->implode(' - ');
+            $linea = $codigo . ' - ' . $item['nombre'];
+            if ($variantes) {
+                $linea .= ' - ' . $variantes;
+            }
+            $linea .= ' x' . $item['cantidad'];
+            return $linea;
+        })
+        ->values()
+        ->toArray(),
+);
                             const total = 'S/ {{ number_format(collect($cart)->sum(fn($i) => $i['precio'] * $i['cantidad']), 2) }}';
                             let msg = '🛍️ *NUEVO PEDIDO*\n\n';
                             msg += '👤 *Cliente:* ' + nombre + '\n';

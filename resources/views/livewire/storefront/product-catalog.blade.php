@@ -48,25 +48,62 @@
                     $imgHover = $imagenesList->firstWhere('orden', 0) ?? $imagenesList->first();
 
                     $opcionesColor = $producto->productoOpciones
-                        ->filter(function ($opt) {
-                            return $opt->atributo && strtolower($opt->atributo->nombre) === 'color';
-                        })
+                        ->filter(fn($opt) => $opt->atributo && strtolower($opt->atributo->nombre) === 'color')
                         ->unique('value_id');
+
+                    // Preparar datos de colores para Alpine (imagen + precio_extra por color)
+                    $coloresData = $opcionesColor
+                        ->map(
+                            fn($op) => [
+                                'valueId' => $op->valor->id,
+                                'nombre' => $op->valor->nombre,
+                                'hex' => $op->valor->valor,
+                                'precioExtra' => (float) ($op->precio_extra ?? 0),
+                                'imgUrl' => $op->imagen_path
+                                    ? Storage::disk('public')->url($op->imagen_path)
+                                    : ($op->imagenes->first()
+                                        ? Storage::disk('public')->url($op->imagenes->first()->path)
+                                        : null),
+                            ],
+                        )
+                        ->values()
+                        ->toJson();
+
+                    $imgOriginal = $producto->imagen_path ? Storage::disk('public')->url($producto->imagen_path) : null;
+                    $precioBase = $producto->descuento > 0 ? $producto->precio_con_descuento : $producto->precio;
                 @endphp
 
-                <div class="group relative flex flex-col transition-all border border-black/10 shadow-sm hover:shadow-md p-2 bg-white"
+                <div x-data="{
+                    imgActual: '{{ $imgOriginal }}',
+                    imgOriginal: '{{ $imgOriginal }}',
+                    colorSel: null,
+                    precioBase: {{ $precioBase }},
+                    precioExtra: 0,
+                    colores: {{ $coloresData }},
+                    selColor(c) {
+                        if (this.colorSel === c.valueId) {
+                            // Deseleccionar — volver al estado original
+                            this.colorSel = null;
+                            this.precioExtra = 0;
+                            this.imgActual = this.imgOriginal;
+                        } else {
+                            this.colorSel = c.valueId;
+                            this.precioExtra = c.precioExtra;
+                            if (c.imgUrl) this.imgActual = c.imgUrl;
+                            else this.imgActual = this.imgOriginal;
+                        }
+                    },
+                    get precioFinal() { return this.precioBase + this.precioExtra; }
+                }"
+                    class="group relative flex flex-col transition-all border border-black/10 shadow-sm hover:shadow-md p-2 bg-white"
                     wire:key="prod-{{ $producto->id }}">
 
-                    {{-- Contenedor de Imagen con Enlace --}}
+                    {{-- Imagen --}}
                     <div class="relative w-full aspect-[3/4] mb-5 overflow-hidden bg-[#F9F9F9]">
-
-                        {{-- Enlace que cubre toda la imagen --}}
                         <a href="{{ route('product.detail', $producto->id) }}" class="absolute inset-0 z-0">
                             @if ($producto->imagen_path)
-                                <img src="{{ Storage::disk('public')->url($producto->imagen_path) }}"
-                                    alt="{{ $producto->nombre }}"
-                                    class="product-img-main absolute inset-0 w-full h-full object-contain mix-blend-multiply
-                                transition-all duration-500 ease-in-out {{ $imgHover ? 'group-hover:opacity-0 group-hover:scale-105' : 'group-hover:scale-105' }}">
+                                <img :src="imgActual" alt="{{ $producto->nombre }}"
+                                    class="product-img-main absolute inset-0 w-full h-full object-contain mix-blend-multiply transition-all duration-500 ease-in-out">
                             @else
                                 <span
                                     class="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.2em] text-gray-300 uppercase">Sin
@@ -77,25 +114,24 @@
                                 <img src="{{ Storage::disk('public')->url($imgHover->path) }}"
                                     alt="{{ $producto->nombre }} — vista alternativa"
                                     class="absolute inset-0 w-full h-full object-contain p-4 mix-blend-multiply
-                                opacity-0 scale-105 transition-all duration-500 ease-in-out group-hover:opacity-100 group-hover:scale-100">
+                               opacity-0 scale-105 transition-all duration-500 ease-in-out group-hover:opacity-100 group-hover:scale-100">
                             @endif
                         </a>
 
-                        {{-- Mini carrusel (z-10 para estar sobre el link) --}}
+                        {{-- Carrusel dots --}}
                         @if ($imagenesList->count() > 1)
                             <div
                                 class="carousel-dots absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                                 @foreach ($imagenesList as $i => $img)
                                     <button type="button"
                                         onclick="setCarouselImg(this, '{{ Storage::disk('public')->url($img->path) }}', {{ $i }})"
-                                        class="carousel-dot w-1.5 h-1.5 rounded-full bg-black/20 transition-all duration-200
-                                    {{ $i === 0 ? 'bg-black/70 w-3' : '' }}">
+                                        class="carousel-dot w-1.5 h-1.5 rounded-full bg-black/20 transition-all duration-200 {{ $i === 0 ? 'bg-black/70 w-3' : '' }}">
                                     </button>
                                 @endforeach
                             </div>
                         @endif
 
-                        {{-- Badge de descuento (z-10) --}}
+                        {{-- Badge descuento --}}
                         @if ($producto->descuento > 0)
                             <div
                                 class="absolute top-0 left-0 bg-black text-white text-[11px] px-3 py-1.5 font-bold tracking-widest z-10 pointer-events-none">
@@ -104,7 +140,7 @@
                         @endif
                     </div>
 
-                    {{-- Información del producto con Enlace --}}
+                    {{-- Info --}}
                     <div class="flex flex-col flex-grow text-left">
                         <a href="{{ route('product.detail', $producto->id) }}"
                             class="block group-hover:opacity-70 transition-opacity">
@@ -119,38 +155,47 @@
                                 </p>
                             @endif
 
-                            <div class="flex items-baseline justify-start gap-4 mb-4">
+                            {{-- Precio dinámico con Alpine --}}
+                            <div class="flex items-baseline justify-start gap-3 mb-4">
+                                <span class="text-lg font-black tracking-tighter"
+                                    :class="precioExtra > 0 ? 'text-black' : 'text-gray-900'">
+                                    S/ <span x-text="precioFinal.toFixed(2)"></span>
+                                </span>
                                 @if ($producto->descuento > 0)
-                                    <span class="text-lg font-black tracking-tighter">
-                                        S/ {{ number_format($producto->precio_con_descuento, 2) }}
-                                    </span>
                                     <span class="text-xs text-gray-300 line-through font-light tracking-wide">
                                         S/ {{ number_format($producto->precio, 2) }}
                                     </span>
-                                @else
-                                    <span class="text-lg font-black tracking-tighter text-gray-900">
-                                        S/ {{ number_format($producto->precio, 2) }}
-                                    </span>
                                 @endif
+                                {{-- Badge precio extra --}}
+                                <span x-show="precioExtra > 0" x-text="'+S/ ' + precioExtra.toFixed(2)"
+                                    class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded"
+                                    style="display:none;">
+                                </span>
                             </div>
                         </a>
 
-                        {{-- Colores (.stop para no activar el link del padre si decides envolver todo) --}}
+                        {{-- Swatches de color — CLIC para seleccionar --}}
                         @if ($opcionesColor->count() > 0)
-                            <div class="flex gap-3 items-center flex-wrap">
-                                @foreach ($opcionesColor as $opcion)
+                            <div class="flex gap-2 items-center flex-wrap mt-1">
+                                <template x-for="c in colores" :key="c.valueId">
                                     <div class="group/color relative">
-                                        <div class="w-3.5 h-3.5 rounded-full border border-gray-200 transition-transform hover:scale-125 shadow-sm"
-                                            style="background-color: {{ $opcion->valor->valor }};">
-                                        </div>
+                                        <button type="button" @click.stop="selColor(c)"
+                                            :title="c.nombre + (c.precioExtra > 0 ? ' +S/' + c.precioExtra.toFixed(2) : '')"
+                                            :class="colorSel === c.valueId ?
+                                                'ring-2 ring-black ring-offset-1 scale-110' :
+                                                'border border-gray-200 hover:scale-125'"
+                                            class="w-4 h-4 rounded-full shadow-sm transition-all"
+                                            :style="'background-color:' + c.hex">
+                                        </button>
+                                        {{-- Tooltip --}}
                                         <span
                                             class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/color:block
-                                    bg-black text-white text-[9px] px-2 py-1 uppercase tracking-widest
-                                    whitespace-nowrap z-10 pointer-events-none shadow-xl">
-                                            {{ $opcion->valor->nombre }}
+                                bg-black text-white text-[9px] px-2 py-1 uppercase tracking-widest
+                                whitespace-nowrap z-10 pointer-events-none shadow-xl"
+                                            x-text="c.nombre + (c.precioExtra > 0 ? ' +S/'+c.precioExtra.toFixed(2) : '')">
                                         </span>
                                     </div>
-                                @endforeach
+                                </template>
                             </div>
                         @endif
                     </div>
@@ -255,6 +300,23 @@
             /* Limpiar estado hover para que no tape la imagen elegida */
             if (hoverImg && idx === 0) {
                 hoverImg.style.opacity = '';
+            }
+        }
+
+        function previewColor(btn, newSrc) {
+            const card = btn.closest('.group');
+            const mainImg = card.querySelector('.product-img-main');
+            if (mainImg) {
+                btn.dataset.originalSrc = mainImg.src; // guarda el original
+                mainImg.src = newSrc;
+            }
+        }
+
+        function resetColor(btn) {
+            const card = btn.closest('.group');
+            const mainImg = card.querySelector('.product-img-main');
+            if (mainImg && btn.dataset.originalSrc) {
+                mainImg.src = btn.dataset.originalSrc;
             }
         }
     </script>

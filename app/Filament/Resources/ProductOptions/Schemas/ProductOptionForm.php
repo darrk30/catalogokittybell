@@ -42,7 +42,7 @@ class ProductOptionForm
                             ->columnSpan(['default' => 12, 'md' => 4]),
 
                         // Campo de subida: Oculto por defecto
-                        FileUpload::make('imagen_path_file')
+                        FileUpload::make('imagen_path')
                             ->label('Imagen de Variante')
                             ->image()
                             ->optimize('webp', 80)
