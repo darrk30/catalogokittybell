@@ -116,7 +116,7 @@
                             @if ($imgHover)
                                 <img src="{{ Storage::disk('public')->url($imgHover->path) }}"
                                     alt="{{ $producto->nombre }} — vista alternativa"
-                                    class="absolute inset-0 w-full h-full object-contain p-4 mix-blend-multiply opacity-0 scale-105 transition-all duration-500 ease-in-out group-hover:opacity-100">
+                                    class="absolute inset-0 w-full h-full object-contain p-4 mix-blend-multiply opacity-0 transition-all duration-500 ease-in-out group-hover:opacity-100">
                             @endif
                         </a>
 

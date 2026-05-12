@@ -33,10 +33,10 @@ class Category extends Model
         });
 
         // 2. FILTRADO AUTOMÁTICO: Se ejecuta en cada consulta (SELECT)
-        static::addGlobalScope('usuario_propietario', function ($builder) {
-            if (Auth::check()) {
-                $builder->where('user_id', Auth::id());
-            }
-        });
+        // static::addGlobalScope('usuario_propietario', function ($builder) {
+        //     if (Auth::check()) {
+        //         $builder->where('user_id', Auth::id());
+        //     }
+        // });
     }
 }
