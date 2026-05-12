@@ -71,11 +71,11 @@ class Product extends Model
         });
 
         // 2. FILTRADO AUTOMÁTICO: Se ejecuta en cada consulta (SELECT)
-        static::addGlobalScope('usuario_propietario', function ($builder) {
-            if (Auth::check()) {
-                $builder->where('user_id', Auth::id());
-            }
-        });
+        // static::addGlobalScope('usuario_propietario', function ($builder) {
+        //     if (Auth::check()) {
+        //         $builder->where('user_id', Auth::id());
+        //     }
+        // });
 
         // 3. ELIMINA LA IMAGEN: Se ejecuta cuando se actualiza la imagen del producto
         static::updating(function ($model) {
