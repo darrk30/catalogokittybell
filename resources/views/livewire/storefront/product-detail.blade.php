@@ -20,7 +20,6 @@
                 @endforeach
             </div>
 
-            {{-- Imagen Principal (Padding reducido y Badge de Descuento) --}}
             {{-- Imagen Principal --}}
             <div class="flex-1 bg-[#F9F9F9] aspect-[4/5] relative overflow-hidden rounded-sm group">
 

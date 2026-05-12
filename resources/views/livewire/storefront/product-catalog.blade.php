@@ -104,9 +104,7 @@
                             {{-- Imagen Principal --}}
                             @if ($producto->imagen_path)
                                 <img :src="imgActual" alt="{{ $producto->nombre }}"
-                                    class="product-img-main absolute inset-0 w-full h-full object-contain mix-blend-multiply transition-all duration-500 ease-in-out 
-            {{-- Solo se oculta si existe una imagen de hover --}}
-            {{ $imgHover ? 'group-hover:opacity-0' : '' }}">
+                                    class="product-img-main absolute inset-0 w-full h-full object-contain mix-blend-multiply transition-all duration-500 ease-in-out {{ $imgHover ? 'group-hover:opacity-0' : '' }}">
                             @else
                                 <span
                                     class="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.2em] text-gray-300 uppercase">
@@ -118,8 +116,7 @@
                             @if ($imgHover)
                                 <img src="{{ Storage::disk('public')->url($imgHover->path) }}"
                                     alt="{{ $producto->nombre }} — vista alternativa"
-                                    class="absolute inset-0 w-full h-full object-contain p-4 mix-blend-multiply
-            opacity-0 scale-105 transition-all duration-500 ease-in-out group-hover:opacity-100 group-hover:scale-100">
+                                    class="absolute inset-0 w-full h-full object-contain p-4 mix-blend-multiply opacity-0 scale-105 transition-all duration-500 ease-in-out group-hover:opacity-100">
                             @endif
                         </a>
 
