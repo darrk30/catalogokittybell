@@ -37,9 +37,13 @@ class ProductDetail extends Component
 
     public function selectOption(string $atributo, int $valorId): void
     {
-        $this->selectedOptions[$atributo] = $valorId;
+        // Si ya está seleccionado → deseleccionar (toggle)
+        if (($this->selectedOptions[$atributo] ?? null) == $valorId) {
+            $this->selectedOptions[$atributo] = null;
+        } else {
+            $this->selectedOptions[$atributo] = $valorId;
+        }
 
-        // Si es color, actualizar imagen principal
         if (strtolower($atributo) === 'color') {
             $this->actualizarImagenPorColor();
         }
@@ -80,11 +84,11 @@ class ProductDetail extends Component
 
     public function getValoresBloqueadosProperty(): array
     {
-        $bloqueados = []; // value_id => true
+        $bloqueados = [];
 
-        // ── PASO 1: Exclusiones directas ─────────────────────────
-        // "Esta opción seleccionada bloquea estos value_ids"
         foreach ($this->selectedOptions as $atributo => $valorId) {
+            if (!$valorId) continue; // ← ignorar deseleccionados
+
             $opcion = $this->producto->productoOpciones
                 ->first(
                     fn($op) =>
@@ -94,22 +98,17 @@ class ProductDetail extends Component
 
             if (!$opcion) continue;
 
-            // Cargar exclusiones de esta opción (ya eager-loaded o lazy)
             foreach ($opcion->exclusiones as $excl) {
                 $bloqueados[$excl->value_id] = true;
             }
         }
 
-        // ── PASO 2: Exclusiones inversas ─────────────────────────
-        // "Si una opción NO seleccionada tiene una exclusión que apunta
-        //  a alguno de los valores YA seleccionados → esa opción está bloqueada"
-        $selectedValueIds = array_values($this->selectedOptions); // [valorId1, valorId2, ...]
+        // Exclusiones inversas — también ignorar nulls
+        $selectedValueIds = array_filter(array_values($this->selectedOptions));
 
         foreach ($this->producto->productoOpciones as $opcion) {
             foreach ($opcion->exclusiones as $excl) {
-                // Si esta exclusión apunta a un valor que está seleccionado
                 if (in_array($excl->value_id, $selectedValueIds)) {
-                    // Entonces el valor de ESTA opción también está bloqueado
                     $bloqueados[$opcion->value_id] = true;
                 }
             }
@@ -117,6 +116,7 @@ class ProductDetail extends Component
 
         return $bloqueados;
     }
+
 
     public function getMontoExtraProperty()
     {
@@ -238,6 +238,24 @@ class ProductDetail extends Component
     // ── Agregar al carrito ────────────────────────────────────
     public function agregarAlCarrito(): void
     {
+        $atributos = $this->producto->productoOpciones
+            ->pluck('atributo.nombre')
+            ->unique()
+            ->values();
+
+        $sinSeleccionar = $atributos->filter(
+            fn($attr) => empty($this->selectedOptions[$attr])
+        );
+
+        if ($sinSeleccionar->isNotEmpty()) {
+            $lista = $sinSeleccionar->implode(', ');
+            $this->dispatch('notify', [
+                'type'    => 'error',
+                'message' => "Por favor selecciona: {$lista}",
+            ]);
+            return;
+        }
+
         $variantKey = 'prod_' . $this->producto->id . '_'
             . collect($this->selectedOptions)->values()->implode('_');
 

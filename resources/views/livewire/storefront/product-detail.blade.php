@@ -148,16 +148,14 @@
                                 @endphp
 
                                 @if (strtolower($nombreAtributo) === 'color')
-                                    <button
-                                        wire:click="{{ $isBloqueado ? '' : "selectOption('{$nombreAtributo}', {$opt->valor->id})" }}"
-                                        title="{{ $opt->valor->nombre }}{{ $isBloqueado ? ' (No disponible)' : '' }}"
+                                    <button wire:click="selectOption('{{ $nombreAtributo }}', {{ $opt->valor->id }})"
+                                        title="{{ $isSelected ? 'Clic para deseleccionar' : $opt->valor->nombre }}{{ $isBloqueado ? ' (No disponible)' : '' }}"
                                         @disabled($isBloqueado)
                                         class="relative w-8 h-8 rounded-full border-2 p-0.5 transition-all
-                                            {{ $isSelected ? 'border-black scale-110 shadow-sm' : 'border-gray-100 hover:border-gray-400' }}
-                                            {{ $isBloqueado ? 'opacity-30 cursor-not-allowed grayscale' : '' }}">
+                                            {{ $isSelected ? 'border-black scale-110 shadow-sm ring-2 ring-offset-1 ring-black' : 'border-gray-100 hover:border-gray-400' }}
+                                            {{ $isBloqueado ? 'opacity-30 cursor-not-allowed grayscale' : 'cursor-pointer' }}">
                                         <div class="w-full h-full rounded-full"
-                                            style="background-color: {{ $opt->valor->valor }}">
-                                        </div>
+                                            style="background-color: {{ $opt->valor->valor }}"></div>
                                         @if ($isSelected)
                                             <div class="absolute inset-0 flex items-center justify-center">
                                                 <svg class="w-3 h-3 drop-shadow" fill="white" viewBox="0 0 24 24">
@@ -167,13 +165,16 @@
                                         @endif
                                     </button>
                                 @else
-                                    <button
-                                        wire:click="{{ $isBloqueado ? '' : "selectOption('{$nombreAtributo}', {$opt->valor->id})" }}"
+                                    <button wire:click="selectOption('{{ $nombreAtributo }}', {{ $opt->valor->id }})"
                                         @disabled($isBloqueado)
                                         class="px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all
-                                            {{ $isSelected ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-200 hover:border-black' }}
-                                            {{ $isBloqueado ? 'opacity-30 cursor-not-allowed line-through' : '' }}">
+                                            {{ $isSelected ? 'bg-black text-white border-black ring-2 ring-offset-1 ring-black' : 'bg-white text-black border-gray-200 hover:border-black' }}
+                                            {{ $isBloqueado ? 'opacity-30 cursor-not-allowed line-through' : 'cursor-pointer' }}">
                                         {{ $opt->valor->nombre }}
+                                        {{-- @if ($isSelected)
+                                            <span class="block text-[8px] {{ $isSelected ? 'text-gray-300' : '' }}">✕
+                                                deseleccionar</span>
+                                        @endif --}}
                                     </button>
                                 @endif
                             @endforeach
@@ -183,9 +184,23 @@
             </div>
 
             {{-- 🛒 ACCIONES --}}
+            {{-- 🛒 ACCIONES --}}
             <div class="pt-4 space-y-4">
+
+                {{-- Aviso de opciones pendientes --}}
+                @php
+                    $atributosDelProducto = $producto->productoOpciones->pluck('atributo.nombre')->unique()->values();
+
+                    $faltantes = $atributosDelProducto->filter(fn($attr) => empty($selectedOptions[$attr]));
+                @endphp
+
+                @if ($faltantes->isNotEmpty())
+                    <p class="text-[10px] text-red-600 font-bold uppercase tracking-widest text-center">
+                        Selecciona: {{ $faltantes->implode(' · ') }}
+                    </p>
+                @endif
+
                 <div class="flex items-center gap-3">
-                    {{-- Selector de cantidad más compacto --}}
                     <div class="flex items-center border border-gray-100 h-12">
                         <button wire:click="decrementar"
                             class="px-4 text-gray-400 hover:text-black transition">-</button>
@@ -195,14 +210,17 @@
                     </div>
 
                     <button wire:click="agregarAlCarrito"
-                        class="flex-1 bg-black text-white h-12 text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-gray-800 transition-all active:scale-[0.98] shadow-lg shadow-black/5">
-                        Añadir al Carrito
+                        class="flex-1 h-12 text-[10px] font-bold uppercase tracking-[0.3em] transition-all active:scale-[0.98] shadow-lg
+                {{ $faltantes->isNotEmpty()
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-black text-white hover:bg-gray-800 shadow-black/5' }}">
+                        {{ $faltantes->isNotEmpty() ? 'Selecciona opciones' : 'Añadir al Carrito' }}
                     </button>
                 </div>
 
-                {{-- Garantía/Envío (Pequeño detalle extra) --}}
-                <p class="text-[9px] text-gray-400 uppercase tracking-widest text-center">Envío a todo el Perú • Pago
-                    seguro</p>
+                <p class="text-[9px] text-gray-400 uppercase tracking-widest text-center">
+                    Envío a todo el Perú • Pago seguro
+                </p>
             </div>
         </div>
     </div>
