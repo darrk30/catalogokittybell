@@ -20,6 +20,7 @@ class ProductDetail extends Component
             'productoOpciones.atributo',
             'productoOpciones.valor',
             'productoOpciones.imagenes', // imágenes por opción
+            'productoOpciones.exclusiones',
         ]);
 
         $this->imagenPrincipal = $this->producto->imagen_path;
@@ -75,6 +76,46 @@ class ProductDetail extends Component
             // ← ESTE ELSE ES EL FIX: la opción no tiene imagen → volver al principal
             $this->imagenPrincipal = $this->producto->imagen_path;
         }
+    }
+
+    public function getValoresBloqueadosProperty(): array
+    {
+        $bloqueados = []; // value_id => true
+
+        // ── PASO 1: Exclusiones directas ─────────────────────────
+        // "Esta opción seleccionada bloquea estos value_ids"
+        foreach ($this->selectedOptions as $atributo => $valorId) {
+            $opcion = $this->producto->productoOpciones
+                ->first(
+                    fn($op) =>
+                    strtolower($op->atributo?->nombre ?? '') === strtolower($atributo) &&
+                        $op->valor->id == $valorId
+                );
+
+            if (!$opcion) continue;
+
+            // Cargar exclusiones de esta opción (ya eager-loaded o lazy)
+            foreach ($opcion->exclusiones as $excl) {
+                $bloqueados[$excl->value_id] = true;
+            }
+        }
+
+        // ── PASO 2: Exclusiones inversas ─────────────────────────
+        // "Si una opción NO seleccionada tiene una exclusión que apunta
+        //  a alguno de los valores YA seleccionados → esa opción está bloqueada"
+        $selectedValueIds = array_values($this->selectedOptions); // [valorId1, valorId2, ...]
+
+        foreach ($this->producto->productoOpciones as $opcion) {
+            foreach ($opcion->exclusiones as $excl) {
+                // Si esta exclusión apunta a un valor que está seleccionado
+                if (in_array($excl->value_id, $selectedValueIds)) {
+                    // Entonces el valor de ESTA opción también está bloqueado
+                    $bloqueados[$opcion->value_id] = true;
+                }
+            }
+        }
+
+        return $bloqueados;
     }
 
     public function getMontoExtraProperty()

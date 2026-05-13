@@ -40,4 +40,9 @@ class ProductOption extends Model
         // Por consistencia, también lo ponemos aquí
         return $this->belongsTo(Product::class, 'product_id');
     }
+
+    public function exclusiones()
+    {
+        return $this->hasMany(Exclusion::class, 'producto_opciones_id');
+    }
 }

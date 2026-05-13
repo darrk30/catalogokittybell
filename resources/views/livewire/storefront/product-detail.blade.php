@@ -142,18 +142,22 @@
 
                         <div class="flex flex-wrap gap-2">
                             @foreach ($opciones->unique('value_id') as $opt)
-                                @php $isSelected = ($selectedOptions[$nombreAtributo] ?? null) == $opt->valor->id; @endphp
+                                @php
+                                    $isSelected = ($selectedOptions[$nombreAtributo] ?? null) == $opt->valor->id;
+                                    $isBloqueado = isset($this->valoresBloqueados[$opt->valor->id]);
+                                @endphp
 
                                 @if (strtolower($nombreAtributo) === 'color')
-                                    {{-- Swatch de color con wire:click --}}
-                                    <button wire:click="selectOption('{{ $nombreAtributo }}', {{ $opt->valor->id }})"
-                                        title="{{ $opt->valor->nombre }}{{ $opt->precio_extra > 0 ? ' +S/' . number_format($opt->precio_extra, 2) : '' }}"
+                                    <button
+                                        wire:click="{{ $isBloqueado ? '' : "selectOption('{$nombreAtributo}', {$opt->valor->id})" }}"
+                                        title="{{ $opt->valor->nombre }}{{ $isBloqueado ? ' (No disponible)' : '' }}"
+                                        @disabled($isBloqueado)
                                         class="relative w-8 h-8 rounded-full border-2 p-0.5 transition-all
-                                {{ $isSelected ? 'border-black scale-110 shadow-sm' : 'border-gray-100 hover:border-gray-400' }}">
+                                            {{ $isSelected ? 'border-black scale-110 shadow-sm' : 'border-gray-100 hover:border-gray-400' }}
+                                            {{ $isBloqueado ? 'opacity-30 cursor-not-allowed grayscale' : '' }}">
                                         <div class="w-full h-full rounded-full"
                                             style="background-color: {{ $opt->valor->valor }}">
                                         </div>
-                                        {{-- Tick si está seleccionado --}}
                                         @if ($isSelected)
                                             <div class="absolute inset-0 flex items-center justify-center">
                                                 <svg class="w-3 h-3 drop-shadow" fill="white" viewBox="0 0 24 24">
@@ -163,16 +167,13 @@
                                         @endif
                                     </button>
                                 @else
-                                    <button wire:click="selectOption('{{ $nombreAtributo }}', {{ $opt->valor->id }})"
+                                    <button
+                                        wire:click="{{ $isBloqueado ? '' : "selectOption('{$nombreAtributo}', {$opt->valor->id})" }}"
+                                        @disabled($isBloqueado)
                                         class="px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all
-                                {{ $isSelected ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-200 hover:border-black' }}">
+                                            {{ $isSelected ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-200 hover:border-black' }}
+                                            {{ $isBloqueado ? 'opacity-30 cursor-not-allowed line-through' : '' }}">
                                         {{ $opt->valor->nombre }}
-                                        {{-- @if ($opt->precio_extra > 0)
-                                            <span
-                                                class="block text-[8px] {{ $isSelected ? 'text-gray-300' : 'text-green-600' }}">
-                                                +S/ {{ number_format($opt->precio_extra, 2) }}
-                                            </span>
-                                        @endif --}}
                                     </button>
                                 @endif
                             @endforeach
