@@ -151,11 +151,12 @@
                                     <button wire:click="selectOption('{{ $nombreAtributo }}', {{ $opt->valor->id }})"
                                         title="{{ $isSelected ? 'Clic para deseleccionar' : $opt->valor->nombre }}{{ $isBloqueado ? ' (No disponible)' : '' }}"
                                         @disabled($isBloqueado)
-                                        class="relative w-8 h-8 rounded-full border-2 p-0.5 transition-all
-                                            {{ $isSelected ? 'border-black scale-110 shadow-sm ring-2 ring-offset-1 ring-black' : 'border-gray-100 hover:border-gray-400' }}
-                                            {{ $isBloqueado ? 'opacity-30 cursor-not-allowed grayscale' : 'cursor-pointer' }}">
+                                        class="relative w-8 h-8 rounded-full border-2 p-0.5 transition-all overflow-hidden
+            {{ $isSelected ? 'border-black scale-110 shadow-sm ring-2 ring-offset-1 ring-black' : 'border-gray-100 hover:border-gray-400' }}
+            {{ $isBloqueado ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer' }}">
                                         <div class="w-full h-full rounded-full"
                                             style="background-color: {{ $opt->valor->valor }}"></div>
+                                        {{-- Tick si seleccionado --}}
                                         @if ($isSelected)
                                             <div class="absolute inset-0 flex items-center justify-center">
                                                 <svg class="w-3 h-3 drop-shadow" fill="white" viewBox="0 0 24 24">
@@ -163,18 +164,39 @@
                                                 </svg>
                                             </div>
                                         @endif
+                                        {{-- Línea diagonal si bloqueado --}}
+                                        @if ($isBloqueado)
+                                            <span class="absolute inset-0 rounded-full pointer-events-none">
+                                                <svg class="w-full h-full" viewBox="0 0 100 100"
+                                                    preserveAspectRatio="none">
+                                                    <line x1="10" y1="10" x2="90" y2="90"
+                                                        stroke="white" stroke-width="2.5"
+                                                        vector-effect="non-scaling-stroke" />
+                                                    <line x1="10" y1="10" x2="90" y2="90"
+                                                        stroke="#9ca3af" stroke-width="1.5"
+                                                        vector-effect="non-scaling-stroke" />
+                                                </svg>
+                                            </span>
+                                        @endif
                                     </button>
                                 @else
                                     <button wire:click="selectOption('{{ $nombreAtributo }}', {{ $opt->valor->id }})"
                                         @disabled($isBloqueado)
-                                        class="px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all
-                                            {{ $isSelected ? 'bg-black text-white border-black ring-2 ring-offset-1 ring-black' : 'bg-white text-black border-gray-200 hover:border-black' }}
-                                            {{ $isBloqueado ? 'opacity-30 cursor-not-allowed line-through' : 'cursor-pointer' }}">
+                                        class="relative px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all overflow-hidden
+            {{ $isSelected ? 'bg-black text-white border-black ring-2 ring-offset-1 ring-black' : 'bg-white text-black border-gray-200 hover:border-black' }}
+            {{ $isBloqueado ? 'opacity-50 cursor-not-allowed text-gray-300 border-gray-100' : 'cursor-pointer' }}">
                                         {{ $opt->valor->nombre }}
-                                        {{-- @if ($isSelected)
-                                            <span class="block text-[8px] {{ $isSelected ? 'text-gray-300' : '' }}">✕
-                                                deseleccionar</span>
-                                        @endif --}}
+                                        {{-- Línea diagonal si bloqueado --}}
+                                        @if ($isBloqueado)
+                                            <span class="absolute inset-0 pointer-events-none">
+                                                <svg class="w-full h-full" viewBox="0 0 100 100"
+                                                    preserveAspectRatio="none">
+                                                    <line x1="0" y1="0" x2="100" y2="100"
+                                                        stroke="#d1d5db" stroke-width="1.5"
+                                                        vector-effect="non-scaling-stroke" />
+                                                </svg>
+                                            </span>
+                                        @endif
                                     </button>
                                 @endif
                             @endforeach

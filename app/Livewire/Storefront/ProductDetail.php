@@ -15,24 +15,35 @@ class ProductDetail extends Component
 
     public function mount(Product $producto)
     {
-        $this->producto = $producto->load([
-            'imagenes',
-            'productoOpciones.atributo',
-            'productoOpciones.valor',
-            'productoOpciones.imagenes', // imágenes por opción
-            'productoOpciones.exclusiones',
-        ]);
-
+        $this->producto = $producto;
+        $this->cargarOpciones();
         $this->imagenPrincipal = $this->producto->imagen_path;
 
-        // Inicializar con la primera opción de cada atributo
-        foreach ($this->producto->productoOpciones->groupBy('atributo.nombre') as $nombreAtributo => $opciones) {
-            $primeraOpcion = $opciones->first();
-            $this->selectedOptions[$nombreAtributo] = $primeraOpcion->valor->id;
-        }
+        // foreach ($this->producto->productoOpciones->groupBy('atributo.nombre') as $nombreAtributo => $opciones) {
+        //     $primeraOpcion = $opciones->first();
+        //     $this->selectedOptions[$nombreAtributo] = $primeraOpcion->valor->id;
+        // }
 
-        // Si la primera opción de color tiene imagen, usarla desde el inicio
-        $this->actualizarImagenPorColor();
+        // $this->actualizarImagenPorColor();
+    }
+
+    public function hydrate(): void
+    {
+        $this->cargarOpciones();
+    }
+
+    private function cargarOpciones(): void
+    {
+        $this->producto->load([
+            'imagenes',
+            'productoOpciones' => fn($q) => $q->where('estado', true)
+                                            ->with([
+                                                'atributo',
+                                                'valor',
+                                                'imagenes',
+                                                'exclusiones',
+                                            ]),
+        ]);
     }
 
     public function selectOption(string $atributo, int $valorId): void
@@ -118,11 +129,12 @@ class ProductDetail extends Component
     }
 
 
-    public function getMontoExtraProperty()
+    public function getMontoExtraProperty(): float
     {
-        // Buscamos las opciones seleccionadas y sumamos su precio_extra
-        return $this->producto->productoOpciones()
-            ->whereIn('value_id', array_values($this->selectedOptions))
+        $selectedIds = array_filter(array_values($this->selectedOptions));
+
+        return $this->producto->productoOpciones  // ← colección ya filtrada, sin ()
+            ->whereIn('value_id', $selectedIds)
             ->sum('precio_extra') ?? 0;
     }
 
